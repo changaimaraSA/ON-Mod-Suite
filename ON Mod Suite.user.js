@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         ON Mod Suite
-// @namespace    http://www.hanalani.org/
-// @version      2.10.1
+// @namespace    http://www.sonomaacademy.org/
+// @version      2.10.2
 // @description  Collection of mods for Blackbaud ON system
 // @author       Scott Yoshimura
-// @match        https://hanalani.myschoolapp.com/*
+// @match        https://sonomaacademy.myschoolapp.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_setClipboard
@@ -240,8 +240,8 @@ Notes:
 // ----------------------------------------------------------------------------------------
 
 this.$ = this.jQuery = jQuery.noConflict(true);
-const schoolURL = "https://hanalani.myschoolapp.com/"
-const settingsResourceBoardID = "16184"
+const schoolURL = "https://sonomaacademy.myschoolapp.com/"
+const settingsResourceBoardID = "26342"
 
 // Check for page hashchanges
 // Borrowed from: https://stackoverflow.com/questions/18989345/how-do-i-reload-a-greasemonkey-script-when-ajax-changes-the-url-without-reloadin
@@ -506,7 +506,7 @@ function GetModule(strURL)
     } else if (strURL.substring(schoolURL.length+20, schoolURL.length+32) == "athleticteam" && strURL.substring(strURL.length-6, strURL.length) == "roster")
     {
         return "Team Roster";
-    } else if (strURL.substring(strURL.length-6, strURL.length) == "roster")
+    } else if (strURL.substring(strURL.length-6, strURL.length) == "roster" || strURL.substring(strURL.length-8, strURL.length) == "advisees")
     {
         return "Other Roster";
     } else if (strURL.substring(0, schoolURL.length+13) == schoolURL+"app/academics")
@@ -552,7 +552,7 @@ function AddPageFooter()
             if (skipNotificationVersions.indexOf(oldVersion) < 0)
             {
                 setTimeout(function(){
-                    window.open("https://hanalani.myschoolapp.com/app/faculty#resourceboarddetail/"+settingsResourceBoardID)
+                    window.open("https://sonomaacademy.myschoolapp.com/app/faculty#resourceboarddetail/"+settingsResourceBoardID)
                 }, 1000);
             }
         }
@@ -944,8 +944,7 @@ function AddRosterStudentCount(jNode)
     console.log("Function: " + arguments.callee.name)
     var memberCount = $("#roster-count").text();
     var teacherCount = 0;
-/*
-    var nonStudentConditions = ["Teacher", "Co-Teacher", "Assistant Teacher", "Activity Leader", "Owner", "Coach"]
+    var nonStudentConditions = ["Teacher", "Co-Teacher", "Assistant Teacher", "Activity Leader", "Owner", "Coach", "Exploratory Teacher"]
 
     $(".bb-card-title").each(function(index){
        var str = $(this).text();
@@ -953,21 +952,21 @@ function AddRosterStudentCount(jNode)
        {
            teacherCount++;
        }
-    });
-*/
+
     if (!($("#RosterCardContainer").length))
     {
         memberCount = $("h4.pull-left").text();
         memberCount = memberCount.replace(" Members", "");
     }
-
+    });
+/*
     $(".bb-btn-secondary").next().each(function(index){
         if ($(this).find(".bb-dropdown-item").length == 1)
         {
             teacherCount++;
         }
     });
-
+*/
     var studentCount = memberCount - teacherCount;
 
     var studentCountText = "  /  ";
@@ -3697,10 +3696,9 @@ function MathYearAverages()
             if (course.substring(course.length-1) == "A" || course.substring(course.length-1) == "B")
             {
                 var url = localStorage.getItem("math-averages-api-url")
-
-                if (url === null || url === undefined || url == "undefined")
+                if (url === null)
                 {
-                    var html = '<br><small><small><a href = "https://hanalani.myschoolapp.com/app/faculty#resourceboarddetail/'+settingsResourceBoardID+'" class="math-averages" target="_blank">[Open Settings Page to Enable Year Averages]</a></small></small>'
+                    var html = '<br><small><small><a href = "https://sonomaacademy.myschoolapp.com/app/faculty#resourceboarddetail/'+settingsResourceBoardID+'" class="math-averages" target="_blank">[Open Settings Page to Enable Year Averages]</a></small></small>'
                 } else
                 {
                     course = encodeURIComponent(course)
@@ -3846,24 +3844,20 @@ function ImpersonationPage(jNode)
 
     // Display pins
     $(".DelImp").each(function(){
-        if (!$(this).find(".PinImp").length)
-        {
-            var id = $(this).attr("curruser")
-            var name = $(this).closest(".row").find(".ImpUser:first").text()
-            $(this).after('<a href="javascript:void(0)" class="PinImp" curruser="'+id+'" currname="'+name.replace(/"/g, '&quot;')+'"><img src="'+pinImage+'"></a>')
-            $(this).parent().attr("class","col-md-3")
-            $(this).closest(".row").find(".col-md-10").attr("class","col-md-9")
-        }
+        var id = $(this).attr("curruser")
+        var name = $(this).closest(".row").find(".ImpUser:first").text()
+        $(this).after('<a href="javascript:void(0)" class="PinImp" curruser="'+id+'" currname="'+name.replace(/"/g, '&quot;')+'"><img src="'+pinImage+'"></a>')
+        $(this).parent().attr("class","col-md-3")
+        $(this).closest(".row").find(".col-md-10").attr("class","col-md-9")
     });
 
     // Display recent impersonations
     var recentImpersonationsString = localStorage.getItem("RecentImpersonations")
-    var recentHeading = '<div class="row RecentImpersonations"><div class="col-md-12"><span style="font-weight:600;">Recent</span></div></div>'
-    var names = "";
-
     if (recentImpersonationsString != null)
     {
         var recentImpersonations = JSON.parse(recentImpersonationsString)
+        var recentHeading = '<div class="row RecentImpersonations"><div class="col-md-12"><span style="font-weight:600;">Recent</span></div></div>'
+        var names = "";
 
         for (var i = recentImpersonations.length-1; i >= 0; i--)
         {
@@ -3873,9 +3867,9 @@ function ImpersonationPage(jNode)
             names += '</div>'
         }
 
+        $("#pastImpCol").children("div:first").prepend(recentHeading+names+'<div>&nbsp;</div>')
     }
 
-    $("#pastImpCol").children("div:first").prepend(recentHeading+names+'<div>&nbsp;</div>')
 
     // Click Handlers
     $(".ImpUser").unbind("click").bind("click", function(){
