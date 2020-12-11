@@ -71,6 +71,9 @@
 [INDEX038] Email Delimiter Default
 [INDEX039] Word Count for Discussion Responses
 [INDEX040] Impersonation Recent & Pinned
+[INDEX041] Fix Classes Menu Off Screen
+[INDEX042] Fix Gradebook Link
+[INDEX043] Update Page Title
 [INDEX900] Misc. Helper Functions
 
 
@@ -230,6 +233,10 @@ Completed Mods:
 37 - Impersonation Recent & Pinned
      Show recently impersonated users and enable pinning of any user in the recent/past list for quick access.
 
+38 - Update Page Title
+     When viewing a user profile page in Core, Academics, or Enrollment Management, set the page title in the browser to include the
+     name and tab you're on, so you can actually use the browser history to see and navigate where you've been.
+
 Notes:
 - Also removes Connect5 emergency contact info from contact cards
 
@@ -285,6 +292,7 @@ function gmMain(){
         case "Academics":
             waitForKeyElements("h1.bb-tile-header", PostLinkAcademics)
             waitForKeyElements(".bb-page-heading", PostLinkFaculty)
+            UpdatePageTitle($("h1.bb-tile-header"))
             break;
         case "Enrollment Management":
             waitForKeyElements("#CandidateName", PostLinkEnrollmentManagement)
@@ -399,6 +407,9 @@ function gmMain(){
             waitForKeyElements(".ImpUser:first", ImpersonationPage)
             waitForKeyElements(".SearchResultRow:first", ImpersonationSearchResults)
             break;
+        case "New Assignments Page":
+            waitForKeyElements("#sky-tab-4-nav-btn", FixGradebookLink, true)
+            break;
     }
 
     // People Finder Quick Select
@@ -431,15 +442,22 @@ function gmMain(){
     // Highlight row on hover
     HighlightRowOnHover()
 
+    // Fix Classes Menu Off Screen
+    waitForKeyElements(".subnav", FixClassesMenuOffScreen)
+
 }
 
 
 function GetModule(strURL)
 {
     console.log("Function: " + arguments.callee.name + "(" + strURL + ")")
+
     if (strURL == schoolURL+"podium/default.aspx?t=1691&wapp=1&ch=1&_pd=gm_fv&pk=359")
     {
         return "Manual Attendance Sheet Report";
+    } else if (strURL.indexOf("lms-assignment/assignment-center/") > 0)
+    {
+        return "New Assignments Page"
     } else if (strURL.substring(strURL.length-12) == "#impersonate")
     {
         return "Impersonate"
@@ -543,7 +561,7 @@ function AddPageFooter()
         $("body").append('<div align="center" id="on-mod-suite-footer" style="font-size:12px">This site experience enhanced by ON Mod Suite v' + GM_info.script.version + '. | Copyright © 2018-2020 Hanalani Schools | Click <a href="'+schoolURL+'app/faculty#resourceboarddetail/'+settingsResourceBoardID+'" target="_blank">here</a> to change settings.</div>')
 
         // Check if first run of this version of the script--if so, open Settings page to load school-specific settings
-        var skipNotificationVersions = ["2.9.0","2.9.1","2.9.2"]
+        var skipNotificationVersions = []
         var oldVersion = GM_getValue("FirstRunVersionCheck")
 
         if (oldVersion != GM_info.script.version)
@@ -591,6 +609,16 @@ function PostLinkCore(jNode)
 
     jNode.after(strLinks);
 
+    if (window.location.href.indexOf("contactcard") > 0)
+    {
+        waitForKeyElements("#contact-relationship", function (){
+            UpdatePageTitle($("#userName"))
+        });
+    } else
+    {
+        UpdatePageTitle($("#userName"))
+    }
+
     // Add grade level to name display
     $("#userName h1").append(GetGradeLevel($("#userName h1").text()));
     return;
@@ -613,6 +641,9 @@ function PostLinkAcademics(jNode)
 
     // Add grade level to name display
     $("h1.bb-tile-header").append(GetGradeLevel($("h1.bb-tile-header").text()));
+
+    UpdatePageTitle($("h1.bb-tile-header"))
+
     return;
 }
 
@@ -629,6 +660,8 @@ function PostLinkEnrollmentManagement(jNode)
     strLinks = strLinks.concat(GetLink("Core", GetID(strURL)));
     strLinks = strLinks.concat(GetLink("Academics", GetID(strURL)));
     strLinks = strLinks.concat(GetLink("Faculty", strID));
+
+    UpdatePageTitle(jNode)
 
     if (strURL.substring(0, schoolURL.length+33) == schoolURL+"app/enrollment-management#profile")
     {
@@ -4016,8 +4049,94 @@ function ImpersonationSearchResults(jNode)
     });
 }
 
+// -----------------------------------------[INDEX041]-------------------------------------
+// --------------------------------Fix Classes Menu Off Screen-----------------------------
+// ----------------------------------------------------------------------------------------
+
+function FixClassesMenuOffScreen(jNode)
+{
+    console.log("Function: " + arguments.callee.name)
+
+    $("#topnav-containter").find(".subnav").mouseover(function() {
+        var left = $(this).css("left")
+        if (left.length > 0)
+        {
+            left = left.substring(0,left.length-2);
+        }
+
+        if(left < 0)
+        {
+            $(this).css("left", 0);
+        }
+    });
+}
+
+// -----------------------------------------[INDEX042]-------------------------------------
+// -------------------------------------Fix Gradebook Link---------------------------------
+// ----------------------------------------------------------------------------------------
+
+function FixGradebookLink(jNode)
+{
+    console.log("Function: " + arguments.callee.name)
+
+    var url = window.location.href
+    var pos = url.indexOf("/course/")+8
+    var classID = url.substring(pos, url.indexOf("/", pos))
+
+    var gradebookURL = schoolURL+"app/faculty#gradebook/"+classID
+
+    $(jNode).changeElementType("span")
+
+    $("#sky-tab-4-nav-btn").unbind().bind("click", function(event){
+        window.open(gradebookURL, "_blank", "location=0");
+    });
+
+}
+
+// -----------------------------------------[INDEX043]-------------------------------------
+// -------------------------------------Update Page Title----------------------------------
+// ----------------------------------------------------------------------------------------
+
+function UpdatePageTitle(jNode)
+{
+    console.log("Function: " + arguments.callee.name)
+
+    var url = window.location.href.split("/")
+
+    var pos = document.title.indexOf(":")
+    if (pos < 0)
+    {
+        pos = document.title.indexOf("|")
+    }
+
+    if (pos > 0)
+    {
+        document.title = document.title.substring(0,pos-1)+" | "+$(jNode).text()+" | "+url[url.length-1]
+    } else
+    {
+        document.title = document.title+" | "+$(jNode).text()+" | "+url[url.length-1]
+    }
+}
+
 // -----------------------------------------[INDEX900]-------------------------------------
 // -----------------------------------Misc. Helper Functions-------------------------------
+// ----------------------------------------------------------------------------------------
+
+// Change element type, taken from https://stackoverflow.com/questions/8584098/how-to-change-an-element-type-using-jquery
+(function($) {
+    $.fn.changeElementType = function(newType) {
+        var attrs = {};
+
+        $.each(this[0].attributes, function(idx, attr) {
+            attrs[attr.nodeName] = attr.nodeValue;
+        });
+
+        this.replaceWith(function() {
+            return $("<" + newType + "/>", attrs).append($(this).contents());
+        });
+    };
+})(jQuery);
+
 // ----------------------------------------------------------------------------------------
 
 function trimAtChar(str, trimAt)
