@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ON Mod Suite
 // @namespace    http://www.sonomaacademy.org/
-// @version      2.10.2
+// @version      2.12.0
 // @description  Collection of mods for Blackbaud ON system
 // @author       Scott Yoshimura
 // @match        https://sonomaacademy.myschoolapp.com/*
